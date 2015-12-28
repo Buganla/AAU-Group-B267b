@@ -1,0 +1,71 @@
+description of the codes:
+
+#include "ros/ros.h"
+#include "std_msgs/String.h"
+#include "sensor_msgs/LaserScan.h"
+#include <geometry_msgs/Twist.h>
+#include <string>
+
+using namespace std;
+
+void scanValues(const sensor_msgs::LaserScan laser)
+{
+   fprintf(stderr,"\n -------- size[%d] ---------- ", laser.ranges.size());
+   for (unsigned int i=0; i<laser.ranges.size();i++)
+   {
+       fprintf(stderr,"range[%d]=[%f]: ", i, laser.ranges[i]);
+
+   }
+	ros::NodeHandle n;
+	ros::Publisher cmd_vel_pub = n.advertise<geometry_msgs::Twist>("/mobile_base/commands/velocity", 1000);
+	geometry_msgs::Twist base_cmd;
+
+	double smallDistanceLeft = laser.ranges[0];
+   	double smallDistanceRight = laser.ranges[0];
+	for (unsigned int i=0; i<laser.ranges.size();i++) {
+		if(laser.ranges[i] < smallDistanceLeft && i > 146) {
+			smallDistanceLeft = laser.ranges[i];
+           
+		}
+       
+       if(laser.ranges[i] < smallDistanceRight && i < 146) {
+           smallDistanceRight = laser.ranges[i];
+           
+       }
+	}
+
+   if (smallDistanceLeft < smallDistanceRight && smallDistanceLeft < 0.5) {
+       cout << "It's below 0.5m" << endl;
+       base_cmd.angular.z = -0.99;
+   }
+   
+   if (smallDistanceLeft > smallDistanceRight && smallDistanceRight < 0.5) {
+       cout << "It's below 0.5m" << endl;
+       base_cmd.angular.z = 0.99;
+   }
+if (smallDistanceLeft < 0.4 && smallDistanceRight < 0.4) {
+	cout << "Turn until “smallDistance-Left or Right” is above 0.4m" << endl;
+	base_cmd.angular.z = 0.99;
+}
+   else {
+       cout << "Over 0.5m" << endl;
+	base_cmd.linear.x = 0.20;
+   }
+
+   cmd_vel_pub.publish(base_cmd);
+
+}
+
+int main(int argc, char **argv)
+{
+   ros::init(argc, argv, "sensor_listener");
+   ros::NodeHandle n;
+   ros::Publisher cmd_vel_pub = n.advertise<geometry_msgs::Twist>("/mobile_base/commands/velocity", 1000);
+   geometry_msgs::Twist base_cmd;
+   ros::Subscriber hokuyoSubscriber = n.subscribe("/scan", 100, scanValues);
+   ros::spin();
+
+return 0;
+
+}
+
