@@ -1,0 +1,128 @@
+
+
+sensor_listener.cpp
+
+sensor_listener_withBumper.cpp
+
+Programming 31/12
+
+PeterBumper.cpp
+
+drive_base.cpp
+
+bumper_drive.cpp
+
+bumper_drive - med noter.cpp
+C++
+bumper_drive - med noter.cpp
+Info
+Aktivitet
+I GÅR
+
+Michael Bidstrupuploadede et element
+ons. 23.31
+C++
+bumper_drive - med noter.cpp
+Der er ikke registreret nogen aktivitet før 30. december 2015
+Alle valg blev ryddet
+
+//include libraries
+#include <std_msgs/String.h>
+#include <kobuki_msgs/BumperEvent.h>
+#include <geometry_msgs/Twist.h>
+#include <ros/ros.h>
+#include <time.h>
+
+using namespace std;
+
+//Defines the bumperCallback function
+//The constant is set to define where the program finds the headers for its inputs.
+void bumperCallback(const kobuki_msgs::BumperEvent bumperMessage)
+{
+    //Written to simplify the code.
+    //"side" is used as new header for the bumpers three switches.
+    //"state" outputs the activation of one of the switches as 0 or 1. this can also be interpreted by the program with true or false.
+int side = bumperMessage.bumper;
+int state = bumperMessage.state;
+
+//Initiating a node within our function, to  be able to publish to a topic... ...From within our function.
+ros::NodeHandle n;
+//The publisher is set up,
+//The publisher also includes the message type, for the data to correspond the receiving node's headers.
+//And finally the publisher declares which topic to output to.
+ros::Publisher WoundedErGay_Pub = n.advertise<geometry_msgs::Twist>("/mobile_base/commands/velocity", 1000);
+//Declaring the headers from the mobile_base message type. As the program will be outputting it.
+geometry_msgs::Twist base_cmd;
+
+//If the left side it activated it turns right
+//Simple if statement. Nothing impressive going on here.
+//I think you get this one without my help...
+if(side == 0 && state == false){
+//Outputs the word "Left" to the terminal.
+ROS_INFO("Left");
+
+//ros::Time::now() represents a node in ros, that follows the time (?)
+//By setting ros::Time "time" equal to it, we define a constant(?) with the value of the time of when it was created.
+ros::Time time = ros::Time::now();
+//Subtracting the time constant with our current time, we create a value, that becomes bigger as the time goes.
+//Setting ros::Duration() equal to a value, we determine how long time the function should run,
+while(ros::Time::now() - time < ros::Duration(1.0)){
+    	base_cmd.linear.x = 0.0;
+    	base_cmd.angular.z = -0.99;
+}
+//different durations means different times of execution. derp.
+while(ros::Time::now() - time < ros::Duration(2.0)){
+	base_cmd.linear.x = 0.1;
+	base_cmd.angular.z = -0.50;
+}
+}
+
+//If the mid is activated it drives backwards
+if(side == 1 && state == false){
+ROS_INFO("Mid");
+//Skip.
+ros::Time time = ros::Time::now();
+while(ros::Time::now() - time < ros::Duration(5.0)){
+    	base_cmd.linear.x = -0.10;
+    	base_cmd.angular.z = 0.0;
+}
+while(ros::Time::now() - time < ros::Duration(10.0)){
+	base_cmd.linear.x = 0.2;
+	base_cmd.angular.z = 0.0;
+}
+}
+
+//If right side i activated it turns left
+if(side == 2 && state == false){
+ROS_INFO("Right");
+//Godt nytår :)
+ros::Time time = ros::Time::now();
+while(ros::Time::now() - time < ros::Duration(1.0)){
+    	base_cmd.linear.x = 0.0;
+    	base_cmd.angular.z = 0.99;
+}
+while(ros::Time::now() - time < ros::Duration(2.0)){
+	base_cmd.linear.x = 0.2;
+	base_cmd.angular.z = 0.5;
+}
+}
+
+//Publishing the commands to the mobile_base node
+cmd_vel_pub.publish(base_cmd);
+}
+
+//ROS node entries
+int main(int argc, char **argv)
+{
+	ros::init(argc, argv, "bumper");
+	ros::NodeHandle n;
+	ros::Publisher cmd_vel_pub = n.advertise<geometry_msgs::Twist>("/mobile_base/commands/velocity", 1000);
+	//The program runs of the input from the topic publishing the bumper switches.
+	//When something is published to the topic, the subscription script runs the bumperCallback function
+	ros::Subscriber bumperSubscriber = n.subscribe("/mobile_base/events/bumper", 1000, bumperCallback);
+	//Jeg har ingen anelse om hvorfor jeg har skrevet ros::spin();
+	//Hvis i kan finde en forklaring er i meget velkomne!
+	ros::spin();
+
+  return 0;
+}
